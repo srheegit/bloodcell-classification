@@ -1,42 +1,50 @@
 """
 Functions for loading in and working with our data
+and doing initial visualization
 """
 import os
-from Pathlib import Path
+from pathlib import Path
 
 import numpy as np
+import matplotlib.pyplot as plt
 import imageio.v3 as iio
 import cv2
 
 import tensorflow as tf
-import tf.keras as keras
+import tensorflow.keras as keras
 from keras.utils import image_dataset_from_directory
 
-def load_train_val_images_dataset(image_dir,
-                                  target_size=(240,320),
-                                  batch_size=32,
-                                  validation_split=0.2):
+def load_images_dataset(image_dir,
+                        target_size=(240,320),
+                        batch_size=32,
+                        validation_split=None):
     """
     Creates a dataset to load in our images into our models
 
-    Inputs
-    ------
+    Parameters
+    ----------
     dir: path to images
     target_size: size that images will be resized to
     batch_size: batch size
     validation_split: percentage of data to be split for validation
 
-    Outputs
+    Returns
     -------
-    (train_data, val_data): tuple of training dataset, validation dataset
+    (train_data, val_data): tuple of training dataset, validation dataset if validation_split
+    dataset: other wise
     """
-    train_set, test_set = image_dataset_from_directory(image_dir,
-                                                       batch_size=batch_size,
-                                                       image_size=target_size,
-                                                       validation_split=validation_split,
-                                                       subset='both')
-    return train_set, test_set
-
+    if validation_split is not None:
+        train_data, val_data = image_dataset_from_directory(image_dir,
+                                                           batch_size=batch_size,
+                                                           image_size=target_size,
+                                                           seed=123,
+                                                           validation_split=validation_split,
+                                                           subset='both')
+        return train_data, val_data
+    else:
+        return image_dataset_from_directory(image_dir,
+                                            batch_size=batch_size,
+                                            image_size=target_size)
 
 #############################
 #No longer in use:
