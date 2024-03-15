@@ -3,9 +3,11 @@ Functions to visualize our data/ model performance
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 import tensorflow as tf
 import tensorflow.keras as keras
+from sklearn.metrics import confusion_matrix, classification_report
 
 def get_n_images(image_dataset, n_images):
     """
@@ -80,13 +82,14 @@ def visualize_dataset(image_dataset, rep_to_labels):
             count+=1
     plt.show()
 
-def visualize_history(history):
+def visualize_history(history, model_name=None):
     """
     Visualizes the training/validation accuracy and loss during training
 
     Parameters
     ----------
     history: tf History object (e.g. that returned by a keras.fit call)
+    model_name: name of model to be displayed as title
 
     Returns
     -------
@@ -111,10 +114,18 @@ def visualize_history(history):
     plt.ylabel('Loss')
     plt.legend()
 
+    if model_name is not None:
+        plt.suptitle(f"Model {model_name}")
+
     plt.tight_layout()
     plt.show()
 
-def visualize_predictions(model, test_dataset, rep_to_labels):
+def visualize_predictions(model,
+                          rep_to_labels,
+                          test_dataset=None,
+                          test_images=None,
+                          test_labels=None,
+                          model_name=None):
     """
     Picks 10 test images from test_dataset, and displays them
     along with the model's prediction and the prediction probability
@@ -122,19 +133,27 @@ def visualize_predictions(model, test_dataset, rep_to_labels):
     Parameters
     ----------
     model: model to be used for prediction
-    test_dataset: tf.data.Dataset object with test images/labels
     rep_to_labels: dict with keys: integer representation of true labels
                              values: corresponding labels
+    test_dataset: tf.data.Dataset object with test images/labels
+    model_name: name of model to be displayed in title
+    test_images: ndarray of 10 images to be displayed
+    test_labels: ndarray of 10 labels to be displayed
 
     Returns
     -------
     None
     """
+
     # create model that yields prediction probabilites based on model_enet_tl
     model_prob = keras.models.Sequential([model, keras.layers.Softmax()])
 
-    # get 10 images from test_dataset and their true labels
-    image_subset, image_true_labels = get_n_images(test_dataset, 10)
+    if test_images is not None and test_labels is not None:
+        image_subset = test_images
+        image_true_labels = test_labels
+    else:
+        # get 10 images from test_dataset and their true labels
+        image_subset, image_true_labels = get_n_images(test_dataset, 10)
 
     # get prob of predicted labels
     pred_labels_prob = model_prob.predict(image_subset)
@@ -147,16 +166,67 @@ def visualize_predictions(model, test_dataset, rep_to_labels):
 
     # plot the sample images along with their true and predicted labels
     plt.figure(figsize=(20, 8))
-    plt.suptitle('Model Predictions on Sample Test Data')
+    if model_name is not None:
+        plt.suptitle(f'Model {model_name} Predictions on Sample Test Data')
+    else:
+        plt.suptitle('Model Predictions on Sample Test Data')
+
     for i in range(10):
         plt.subplot(2, 5, i+1)
         plt.imshow(image_subset[i]/255)
         plt.xlabel(f"True label: {image_true_labels[i]}\n"
-                    f"Predicted label: {pred_labels[i]}\n"
+                   f"Predicted label: {pred_labels[i]}\n"
                    f"Probability: {pred_labels_prob[i,pred_labels_index[i]]:.4f}")
         plt.xticks([])
         plt.yticks([])
 
     # Adjust plots for nicer visualization and display the result
     plt.tight_layout()
+    plt.show()
+
+def visualize_conf_matrix(model, test_dataset, rep_to_labels, model_name=None):
+    """
+    Prints classification report and displays confusion matrix
+
+    Parameters
+    ----------
+    model: model to display results for
+    test_dataset: tf.data.Dataset object with test images and labels
+    rep_to_labels: dict with keys: integer representation of true labels
+                             values: corresponding labels
+    model_name: name of model to be displayed in title
+
+    Returns
+    -------
+    None
+    """
+    # labels to be displayed
+    labels = list(rep_to_labels.values())
+
+    # get predicted and true labels
+    y_true = []
+    y_pred = []
+
+    for img, label in test_dataset:
+        pred = model.predict(img, verbose=0)
+        pred_label = rep_to_labels[np.argmax(pred)]
+        y_pred.append(pred_label)
+        y_true.append(rep_to_labels[int(label)])
+
+    # print classification report
+    print(classification_report(y_true, y_pred, labels=labels))
+
+    # plot confusion matrix
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+
+    plt.figure(figsize=(10,7))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.xticks(ticks=[0.5,1.5,2.5,3.5], labels=labels)
+    plt.yticks(ticks=[0.5,1.5,2.5,3.5], labels=labels)
+    if model_name is not None:
+        plt.title(f'Confusion Matrix {model_name}')
+    else:
+        plt.title('Confusion Matrix')
     plt.show()
