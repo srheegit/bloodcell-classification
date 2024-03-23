@@ -13,3 +13,8 @@ transfer learning model with EfficientNetB0.
 
 We defined our own preprocessing and visualization functions in the `data_processing` module/directory.
 The `saved_weights` directory contains the updated weights for the transfer learning model.
+
+## References
+[1] Kaggle. Blood cell images. <https://www.kaggle.com/datasets/paultimothymooney/blood-cells>. Accessed: 2024-03-11.
+
+[2] Tan, M. and Le, Q. V. Efficientnet: Rethinking model scaling for convolutional neural networks. ICML, 2019a.
